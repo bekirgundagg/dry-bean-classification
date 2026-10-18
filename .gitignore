@@ -1,0 +1,21 @@
+# macOS sistem dosyaları
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python önbellek ve derleme dosyaları
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Veri seti ve kaydedilmiş model nesneleri
+# (Boyutları büyük olduğu ve ödev tesliminde zipleneceği için repoda tutulmamalıdır)
+data/
+saved_objects/
+
+# IDE ve Editör dosyaları (VS Code / PyCharm)
+.vscode/
+.idea/
+*.swp
+*.swo
