@@ -13,10 +13,10 @@
 
 from torch.utils.data import DataLoader
 import torch
-
+import numpy as np
 from typing import Dict
 import wandb
-
+from sklearn.metrics import f1_score
 class Trainer:
     def __init__(self, model, optimizer, loss_fn, project_name, device, **kwargs):
         self.model = model
@@ -43,14 +43,45 @@ class Trainer:
     # Make sure that your output of this function is a dictionary presenting the results of
     # performance metrics for single training loop
     def train_loop(self, data: DataLoader) -> Dict:
-        raise NotImplementedError("!! Implementation for Trainer.train_loop is missing...")
+        self.model.train()
+        total_loss = 0.0
+        total_f1 = 0.0
+        for X,y in data:
+            X, y = X.to(self.device), y.to(self.device)
+            self.optimizer.zero_grad()
+            outputs = self.model(X)
+            loss = self.loss_fn(outputs, y)
+            loss.backward()
+            self.optimizer.step()
 
-
+            total_loss += loss.item()
+            total_f1 += f1_score(y.argmax(dim=1).cpu().numpy(), outputs.argmax(dim=1).cpu().numpy(), average='macro')
+        avg_loss = total_loss / len(data)
+        avg_f1 = total_f1 / len(data)
+        return {"loss": avg_loss, "f1": avg_f1}
     # Make sure that your output of this function is a dictionary presenting the results of
     # performance metrics for single evaluation loop
     def eval_loop(self, data: DataLoader) -> Dict:
-        raise NotImplementedError("!! Implementation for Trainer.eval_loop is missing...")
+        self.model.eval()
+        total_loss = 0.0
+        total_f1 = 0.0
+        with torch.no_grad():
+            for X,y in data:
+                X, y = X.to(self.device), y.to(self.device)
+                outputs = self.model(X)
+                loss = self.loss_fn(outputs, y)
 
+                total_loss += loss.item()
+                total_f1 += f1_score(y.argmax(dim=1).cpu().numpy(), outputs.argmax(dim=1).cpu().numpy(), average='macro')
+        total_loss = total_loss / len(data)
+        total_f1 = total_f1 / len(data)
+        return {"loss": total_loss, "f1": total_f1}
 
     def log_wandb(self, run, epoch, training_result, eval_result):
-        raise NotImplementedError("!! Implementation for Traininer.log_wandb is missing...")
+        run.log({
+            "epoch": epoch,
+            "train_loss": training_result["loss"],
+            "train_f1": training_result["f1"],
+            "eval_loss": eval_result["loss"],
+            "eval_f1": eval_result["f1"]
+        })
